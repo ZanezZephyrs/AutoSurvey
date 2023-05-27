@@ -1,9 +1,6 @@
-
-
-
-from searchers.semantic_scholar import SemanticScholarSearcher
-from filters.field_in_list_filter import FieldInListFilter
-from filters.field_numeric_filter import FieldNumericFilter
+from AutoSurvey.searchers.semantic_scholar import SemanticScholarSearcher
+from AutoSurvey.filters.field_in_list_filter import FieldInListFilter
+from AutoSurvey.filters.field_numeric_filter import FieldNumericFilter
 import json
 
 searcher=SemanticScholarSearcher()

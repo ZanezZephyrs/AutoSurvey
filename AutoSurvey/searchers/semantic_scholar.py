@@ -1,5 +1,5 @@
 
-from searchers.base import Searcher
+from .base import Searcher
 import requests
 class SemanticScholarSearcher(Searcher):
     def __init__(self) -> None:

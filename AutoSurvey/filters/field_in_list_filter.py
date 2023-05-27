@@ -1,5 +1,4 @@
-
-from filters.base import Filter
+from .base import Filter
 
 class FieldInListFilter(Filter):
     def __init__(self, field: str, allowed_options, strict=True) -> None:

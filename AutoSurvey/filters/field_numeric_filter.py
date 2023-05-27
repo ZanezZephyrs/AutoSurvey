@@ -1,5 +1,4 @@
-
-from filters.base import Filter
+from .base import Filter
 
 class FieldNumericFilter(Filter):
     def __init__(self, field: str, lower_bound=0, upper_bound=1000000) -> None:
@@ -17,5 +16,3 @@ class FieldNumericFilter(Filter):
         
         else:
             return self.lower_bound <= int(doc[self.field]) <= self.upper_bound
-        
-        

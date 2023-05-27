@@ -1,5 +1,4 @@
-
-from llm_inference.base import LLMInference
+from .base import LLMInference
 import openai
 
 class OpenAIInference(LLMInference):

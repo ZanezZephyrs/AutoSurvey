@@ -1,12 +1,11 @@
-
 from abc import ABC, abstractmethod
-class Searcher(ABC):
+class Filter(ABC):
     @abstractmethod
     def __init__(self) -> None:
         pass
 
     @abstractmethod
-    def search(self, query: str):
+    def filter_sm(self, query: str):
         pass
 
     
