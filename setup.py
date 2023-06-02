@@ -9,5 +9,8 @@ setup(
     packages=find_packages(include=['AutoSurvey', 'AutoSurvey.*']),
     install_requires=[
         'openai',
+        'pdfkit',
+        'py3-wkhtmltopdf==0.4.1',
+        'tqdm'
     ],
 )
