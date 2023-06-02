@@ -10,9 +10,21 @@ class SemanticScholarSearcher(Searcher):
         if "query" not in request_data:
             raise ValueError("Semantic Scholar requires a query to search")
         
-        response=requests.get(self.base_url, params=request_data)
-        if not response.ok:
-            response.raise_for_status()
+        current_try=0
+        max_tries=3
+        while current_try<max_tries:
+            try:
+                response=requests.get(self.base_url, params=request_data)
+                if response.ok:
+                    break 
+                else:
+                    current_try+=1
+                    response.raise_for_status()
+
+            except requests.HTTPError as e:
+                
+                continue
+            
 
         data=response.json()["data"]
         if filters:
