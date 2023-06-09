@@ -3,8 +3,12 @@ from AutoSurvey.searchers.semantic_scholar import SemanticScholarSearcher
 from AutoSurvey.filters.field_in_list_filter import FieldInListFilter
 from AutoSurvey.filters.field_numeric_filter import FieldNumericFilter
 from AutoSurvey.pdf_generation.pdf_generator import PDFGenerator
+from AutoSurvey.llm_inference.query_augmentor import QueryAugmentor
 from tqdm import tqdm
+import argparse
 import json
+import logging
+import os
 
 paper_template="""- Paper {I}
 Title:{TITLE}
@@ -15,29 +19,60 @@ template_messages=[
     {"role": "system", "content": "You Are an expert in scientific literature review, your job is, given a series of papers and theirs summaries, write a paragraph with a given title citing relevant information in the traditional format (e.g [1,2,3] [1]) from the provided papers"},
 ]
 
+#create debug logger that writes to file
+debug_logger = logging.getLogger('debug')
+debug_logger.setLevel(logging.DEBUG)
+fh = logging.FileHandler('debug.log')
+fh.setLevel(logging.DEBUG)
+debug_logger.addHandler(fh)
+
+
 searcher=SemanticScholarSearcher()
 
 agent=OpenAIInference(api_key="", engine="gpt-3.5-turbo")
 
+query_augmentor=QueryAugmentor(agent=agent)
 
-def query_to_documents(query):
-  # search for papers with "deep learning" in the title
+def search_one_query(query, filters=None):
   params={
       "query": query,
       "limit": 100, # max 100
-      "fields": "title,authors,citationCount,year,tldr,url,abstract"
+      "fields": "title,authors,citationCount,year,tldr,url,abstract,influentialCitationCount"
   }
 
   # compose as many filters as you like, they are applied in sequence
-  filters=[
-      FieldNumericFilter("citationCount", lower_bound=2), # at least 10 citations
-      FieldNumericFilter("authors", lower_bound=2), # at least 2  authors
-      FieldNumericFilter("year", lower_bound=2020, upper_bound=2023), # between 2020 and 2023
-  ]
+
+  if filters is None:
+    filters=[
+        # FieldNumericFilter("citationCount", lower_bound=2), # at least 10 citations
+        # FieldNumericFilter("authors", lower_bound=2), # at least 2  authors
+        FieldNumericFilter("year", lower_bound=2020, upper_bound=2023), # between 2020 and 2023
+    ]
+
+  
 
   results=searcher.search(params, filters=filters)
 
+  debug_logger.debug(f"query: {query} returned {len(results)} results with filters {filters}")
+
   return results
+
+def query_to_documents(query, filters=None, augment_query=True):
+
+  if augment_query:
+    queries= query_augmentor.augment_queries(query)
+    print("augmentation resulted in the following queries", queries)
+    debug_logger.debug(f"augmentation resulted in the following queries {queries}")
+
+    results=[]
+    for query in queries:
+      results.extend(search_one_query(query, filters=filters))
+
+  else:
+    results=search_one_query(query, filters=filters)
+
+  return results
+  
 
 def documents_to_section(results, query):
 
@@ -71,24 +106,74 @@ def documents_to_section(results, query):
       "content": user_prompt
   })
 
-  return agent.complete(current_msgs)
+  debug_logger.debug(f"prompt for model {user_prompt}")
+  response=agent.complete(current_msgs)
+  debug_logger.debug(f"response from model {response}", )
+
+  return response
 
 
-theme="deep learning"
-sections=[
-    "applications",
-    "latest developments",
-    "neural networks",
-    "large language models"
-]
+# python full_test.py --survey_data /home/thales/Documents/AutoSurvey/data/dataset/survey_2.json --out_path proc1/proc1.json
+if __name__ == "__main__":
 
-sections_data={}
+  argparser = argparse.ArgumentParser()
+  argparser.add_argument("--survey_data", type=str, required=True, help="Path to the json dataset")
+  argparser.add_argument("--out_path", type=str, default="proc1.json", help="Path to save the evaluation results")
+  args = argparser.parse_args()
 
-for section in tqdm(sections):
-  query=theme + " - "+ section
-  documents=query_to_documents(query)
-  section_text=documents_to_section(documents, query)
-  sections_data[section]=section_text
+  if not os.path.exists(args.out_path):
+    from pathlib import Path
+    os.makedirs(Path(args.out_path).parent, exist_ok=True)
+    
+
+  with open(args.survey_data, "r") as f:
+      data = json.load(f)
+
+  
+  survey_title=list(data.keys())[0]
+  sections=[key for key in data[survey_title].keys() if data[survey_title][key]["content"] != "" and key not in ["Introduction", "Conclusion"]]
+
+  print(sections)
 
 
-PDFGenerator.generate_pdf(theme,sections, sections_data, output_file="file.pdf")
+  sections_data={survey_title: {}}
+
+  debug_logger.debug(f"survey title -> {survey_title}")
+
+  for section in tqdm(sections):
+    query=survey_title + " - "+ section
+    documents=query_to_documents(query, filters=None)
+    if len(documents)==0:
+      print("skipping section, no relevant documents found for query", query)
+      continue
+
+    documents=sorted(documents, key=lambda x: x["influentialCitationCount"], reverse=True)
+
+    # print citations of the first 5 papers
+    # for i,doc in enumerate(documents[:5]):
+    #   print(f"paper {i+1} -> {doc['citationCount']} citations")
+
+    
+    section_text=documents_to_section(documents, query)
+    sections_data[survey_title][section]={
+      "content": section_text
+    }
+  print(sections_data)
+
+
+  with open(args.out_path, "w") as f:
+      json.dump(sections_data, f, indent=4)
+
+  pdf_path=args.out_path.replace(".json", ".pdf")
+  PDFGenerator.generate_pdf(survey_title, sections_data, output_file=pdf_path)
+
+# prompt
+# sistema de busca -> qualidade do documento
+# qualidade do gpt 3.5/4
+
+# codigo
+
+# duas colunas
+# reranker
+
+# 

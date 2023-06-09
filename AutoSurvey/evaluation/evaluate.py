@@ -21,6 +21,7 @@ def evaluate(dataset: str, log_file: str):
         all_scores = []
         for survey_name in data:
             for survey_section, content in data[survey_name].items():
+                content=content["content"]
                 prompt = (
                     f"{base_prompt}\nSurvey Name: {survey_name.strip()}\nSurvey Section: {survey_section.strip()}\nContent: {content.strip()}\nEvaluation Form (scores ONLY)\nScore:"
                 ) 

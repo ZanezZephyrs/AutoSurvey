@@ -1,4 +1,5 @@
 
+import time
 from .base import Searcher
 import requests
 class SemanticScholarSearcher(Searcher):
@@ -20,12 +21,19 @@ class SemanticScholarSearcher(Searcher):
                 else:
                     current_try+=1
                     response.raise_for_status()
+                    time.sleep(2)
 
             except requests.HTTPError as e:
                 
                 continue
-            
 
+        if response.status_code!=200:
+            raise ValueError(f"Semantic Scholar returned a non 200 code: {response.status_code}, {response.text}")
+        data=response.json()
+        # print(data)
+        if data["total"]==0:
+            return []
+            
         data=response.json()["data"]
         if filters:
             for desired_filter in filters:

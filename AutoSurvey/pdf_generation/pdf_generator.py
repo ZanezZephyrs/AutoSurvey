@@ -21,22 +21,23 @@ options = {
 class PDFGenerator():
     
     @staticmethod
-    def generate_pdf( theme,sections, sections_data, output_file="file.pdf", pdf_options=options):
-        html=PDFGenerator.to_basic_html(theme, sections, sections_data)
+    def generate_pdf( theme, sections_data, output_file="file.pdf", pdf_options=options):
+        html=PDFGenerator.to_basic_html(theme, sections_data)
         with open("file.html", "w") as fout:
             fout.write(html)
 
         pdfkit.from_file("file.html", output_file,options=pdf_options)        
 
     @staticmethod
-    def to_basic_html(theme, sections, sections_data):
+    def to_basic_html(theme, sections_data):
         html="<html>\n"
         html+=f"<h1>{theme}</h1>\n"
 
+        sections=list(sections_data[theme].keys())
         for section in sections:
             html+=f"<h2>{section}</h2>\n"
 
-            html+=f"<p>{sections_data[section]}</p>\n"
+            html+=f"<p>{sections_data[theme][section]['content']}</p>\n"
 
         html+="</html>"
         return html
