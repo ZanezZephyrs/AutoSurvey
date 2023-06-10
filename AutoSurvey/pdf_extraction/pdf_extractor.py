@@ -1,55 +1,32 @@
 import json
-import re
-import pdfplumber
+import fitz
 
 
-def is_symbol(text):
-    # Check if text is a symbol
-    return re.match(r"^[^a-zA-Z0-9]+$", text) is not None
+def get_windows(input_text: str, window_size: int = 150, stride: int = 75):
+    words = input_text.split()
+    windows = []
+    for i in range(0, len(words), stride):
+        prefix = "..." if i != 0 else ""
+        window_words = words[i : i + window_size]
+        windows.append(prefix + " ".join(window_words))
+        if window_size > len(window_words):
+            break
+    return windows
 
-
-def extract_sections(pdf_path, title_size: int = 16, skip_first_page: bool = True):
-    with pdfplumber.open(pdf_path) as pdf:
-        sections = []
-        current_section = {"title": "", "content": ""}
-        getting_section_title = False
-        for page_number, page in enumerate(pdf.pages):
-            if page_number == 0 and skip_first_page:
-                continue
-            for element in page.extract_words(extra_attrs=["size"], x_tolerance=1):
-                element["text"] = element["text"].encode("utf-8").decode("utf-8")
-                if element["size"] >= title_size:
-                    if getting_section_title:
-                        if not is_symbol(element["text"]):
-                            current_section["title"] = current_section["title"] + " " + element["text"]
-                    else:
-                        if current_section["content"] != "":
-                            sections.append(current_section)
-                            current_section = {"title": "", "content": ""}
-                        getting_section_title = True
-                        if not is_symbol(element["text"]):
-                            current_section["title"] = element["text"]
-                else:
-                    getting_section_title = False
-                    current_section["content"] = current_section["content"] + " " + element["text"]
-        if current_section["content"] != "":
-            sections.append(current_section)
-    return sections
-
-
-def get_pdf_content(pdf_path, output_path, title_size: int = 16, skip_first_page: bool = True):
-    sections = extract_sections(pdf_path, title_size, skip_first_page)
-    parsed_sections = []
-    for section in sections:
-        if section["title"].strip() != "":
-            parsed_sections.append(section)
-        elif len(parsed_sections) > 0:
-            parsed_sections[-1]["content"] = parsed_sections[-1]["content"] + "\n" + section["content"]
-        else:
-            parsed_sections.append(section)
-    with open(output_path, "w", encoding="utf-8") as fout:
-        json.dump(parsed_sections, fout, ensure_ascii=True, indent=4)
-
-# Example usage
-pdf_path = ""
-get_pdf_content(pdf_path, "output.json", title_size=16, skip_first_page=False)
+def get_pdf_content(pdf_path: str, json_path: str, window_size: int = 150, stride: int = 75):
+    pdf_doc = fitz.open(pdf_path)
+    num_pages = pdf_doc.page_count
+    content = ""
+    for page_num in range(num_pages):
+        page = pdf_doc.load_page(page_num)
+        text = page.get_text()
+        content += text + "\n"
+    windows = get_windows(content, window_size, stride)
+    pdf_data = {
+        "title": pdf_path.split("/")[-1],
+        "num_pages": num_pages,
+        "windows": windows
+    }
+    with open(json_path, "w", encoding="utf-8") as fout:
+        json.dump(pdf_data, fout, indent=4)
+    pdf_doc.close()
