@@ -21,21 +21,22 @@ def evaluate(dataset: str, log_file: str):
         all_scores = []
         for survey_name in data:
             for survey_section, content in data[survey_name].items():
-                content=content["content"]
+                generated_content = content["generated"]
+                ground_truth = content["gold"]
                 prompt = (
-                    f"{base_prompt}\nSurvey Name: {survey_name.strip()}\nSurvey Section: {survey_section.strip()}\nContent: {content.strip()}\nEvaluation Form (scores ONLY)\nScore:"
+                    f"{base_prompt}\nSurvey Name: {survey_name.strip()}\nSurvey Section: {survey_section.strip()}\nContent: {generated_content.strip()}\nGround Truth Text: {ground_truth}\nEvaluation Form (scores ONLY)\nScore:"
                 ) 
                 score = get_llm_score(prompt)
                 all_scores.append(score)
-                json.dump({"survey_name": survey_name, "survey_section": survey_section, "content": content, "score": score}, f)
+                json.dump({"survey_name": survey_name, "survey_section": survey_section, "content": generated_content, "score": score}, f)
     
     return sum(all_scores)/len(all_scores)
 
 
 def get_llm_score(prompt):
     system_prompt = dedent("""
-    You will be given a text written for a survey section.
-    Your task is to rate the content on one metric.
+    You will be given a text written for a survey section and a ground truth section.
+    Your task is to rate the content of the survey section on one metric comparing this text with the ground truth which has the maximum score.
     Please make sure you read and understand the instructions carefully.
     Please keep the document open while reviewing, and refer to it as needed.""")
 
