@@ -14,6 +14,8 @@ setup(
         'tqdm',
         'transformers',
         'torch',
-        'sentencepiece'
+        'sentencepiece',
+        'pydantic',
+        'PyMuPDF'
     ],
 )
