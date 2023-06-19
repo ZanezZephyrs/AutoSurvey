@@ -11,6 +11,9 @@ setup(
         'openai',
         'pdfkit',
         'py3-wkhtmltopdf==0.4.1',
-        'tqdm'
+        'tqdm',
+        'transformers',
+        'torch',
+        'sentencepiece'
     ],
 )
