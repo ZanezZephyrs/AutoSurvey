@@ -1,11 +1,18 @@
 from typing import List
 from math import exp
 
+from tqdm.auto import tqdm
+
 from transformers import (
     AutoTokenizer,
     AutoModelForSeq2SeqLM
 )
 import torch
+
+def chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+      yield lst[i:i + n]
 
 
 class MonoT5():
@@ -31,7 +38,7 @@ class MonoT5():
         self.model = AutoModelForSeq2SeqLM.from_pretrained(model_name_or_path, **model_args).to(self.device)
 
     @torch.no_grad()
-    def rescore(self, query: str, batch: List[str]):
+    def rescore(self, query: str, docs: List[str], batch_size: int = 8):
         """
         Adapted from Pygaggle's repo.
         Rescore all documents for the given query.
@@ -40,27 +47,28 @@ class MonoT5():
             batch: list of passages for ranking
         """
         scores = []
-        # Creates the inputs to the model
-        queries_documents = [f"Query: {query} Document: {text} Relevant:" for text in batch]
-        tokenized = self.tokenizer(
-            queries_documents,
-            padding=True,
-            truncation="longest_first",
-            return_tensors="pt",
-            max_length=512,
-        ).to(self.device)
-        input_ids = tokenized["input_ids"].to(self.device)
-        attention_mask = tokenized["attention_mask"].to(self.device)
-        _ , batch_scores = self.greedy_decode(model=self.model,
-                                            input_ids=input_ids,
-                                            length=1,
-                                            attention_mask=attention_mask,
-                                            return_last_logits=True)
-        batch_scores = batch_scores[:, [self.token_false_id, self.token_true_id]]
-        batch_scores = torch.nn.functional.log_softmax(batch_scores, dim=1)
-        batch_log_probs = batch_scores[:, 1].tolist()
-        batch_probs = [exp(log_prob) for log_prob in batch_log_probs]
-        scores.extend(batch_probs)
+        for batch in tqdm(chunks(docs, batch_size), total=len(docs)//batch_size, desc="Rescoring documents"):
+            # Creates the inputs to the model
+            queries_documents = [f"Query: {query} Document: {text} Relevant:" for text in batch]
+            tokenized = self.tokenizer(
+                queries_documents,
+                padding=True,
+                truncation="longest_first",
+                return_tensors="pt",
+                max_length=512,
+            ).to(self.device)
+            input_ids = tokenized["input_ids"].to(self.device)
+            attention_mask = tokenized["attention_mask"].to(self.device)
+            _ , batch_scores = self.greedy_decode(model=self.model,
+                                                input_ids=input_ids,
+                                                length=1,
+                                                attention_mask=attention_mask,
+                                                return_last_logits=True)
+            batch_scores = batch_scores[:, [self.token_false_id, self.token_true_id]]
+            batch_scores = torch.nn.functional.log_softmax(batch_scores, dim=1)
+            batch_log_probs = batch_scores[:, 1].tolist()
+            batch_probs = [exp(log_prob) for log_prob in batch_log_probs]
+            scores.extend(batch_probs)
         return scores
 
     @torch.no_grad()
