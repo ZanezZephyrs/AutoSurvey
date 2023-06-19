@@ -1,4 +1,3 @@
-import json
 import fitz
 
 
@@ -13,7 +12,7 @@ def get_windows(input_text: str, window_size: int = 150, stride: int = 75):
             break
     return windows
 
-def get_pdf_content(pdf_path: str, json_path: str, window_size: int = 150, stride: int = 75):
+def get_pdf_windows(pdf_path: str, window_size: int = 150, stride: int = 75):
     pdf_doc = fitz.open(pdf_path)
     num_pages = pdf_doc.page_count
     content = ""
@@ -22,11 +21,4 @@ def get_pdf_content(pdf_path: str, json_path: str, window_size: int = 150, strid
         text = page.get_text()
         content += text + "\n"
     windows = get_windows(content, window_size, stride)
-    pdf_data = {
-        "title": pdf_path.split("/")[-1],
-        "num_pages": num_pages,
-        "windows": windows
-    }
-    with open(json_path, "w", encoding="utf-8") as fout:
-        json.dump(pdf_data, fout, indent=4)
-    pdf_doc.close()
+    return windows
