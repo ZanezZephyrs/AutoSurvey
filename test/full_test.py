@@ -6,7 +6,7 @@ from AutoSurvey.pdf_generation.pdf_generator import PDFGenerator
 from AutoSurvey.llm_inference.query_augmentor import QueryAugmentor
 from AutoSurvey.ranker import MonoT5
 from AutoSurvey.pdf_extraction.pdf_extractor import get_pdf_windows
-from tqdm import tqdm
+from tqdm.auto import tqdm
 import argparse
 import json
 import logging
@@ -15,7 +15,7 @@ import tempfile
 
 paper_template="""- Paper {I}
 Title:{TITLE}
-Summary: {SUMMARY}
+Content: {CONTENT}
 """
 
 template_messages=[
@@ -36,7 +36,7 @@ agent=OpenAIInference(api_key="", engine="gpt-3.5-turbo")
 
 query_augmentor=QueryAugmentor(agent=agent)
 
-def search_one_query(query, filters=None, rerank=False, model=None, search_in_original_pdf=False):
+def search_one_query(query, filters=None, rerank=False, model=None):
   params={
       "query": query,
       "limit": 10, # max 100
@@ -52,34 +52,34 @@ def search_one_query(query, filters=None, rerank=False, model=None, search_in_or
         FieldNumericFilter("year", lower_bound=2020, upper_bound=2023), # between 2020 and 2023
     ]
 
-  results=searcher.search(params, filters=filters)
-
-  if rerank:
-    info_to_rerank = []
-    for result in tqdm(results, desc="Downloading pdfs"):
-      if search_in_original_pdf:
-        pdf = searcher.download_pdf(result["paperId"])
-        if pdf:
-          temp_file = tempfile.NamedTemporaryFile()
-          temp_file_path = temp_file.name
-          windows = get_pdf_windows(temp_file_path)
-          info_to_rerank.extend(windows)
-          temp_file.close()
-          continue
-      if result["abstract"]:
-        info_to_rerank.append(result["title"] + " " + result["abstract"])
-      elif result["tldr"] and result["tldr"].get("text"):
-        info_to_rerank.append(result["title"] + " " + result["tldr"]["text"])
-      else:
+  docs = searcher.search(params, filters=filters)
+  augmented_docs = []
+  for doc in tqdm(docs, desc="Downloading pdfs"):
+    if rerank:
+      pdf = searcher.download_pdf(doc["paperId"])
+      if pdf:
+        temp_file = tempfile.NamedTemporaryFile()
+        temp_file_path = temp_file.name
+        temp_file.write(pdf)
+        windows = get_pdf_windows(temp_file_path)
+        temp_file.close()
+        augmented_docs.extend([{"title": doc["title"], "content": window} for window in windows])
         continue
-    scores=model.rescore(query, info_to_rerank)
-    results = [x for _,x in sorted(zip(scores, results), key=lambda x: x[0], reverse=True)]
+    if doc["abstract"]:
+      augmented_docs.append({"title": doc["title"], "content": doc["abstract"]})
+    elif doc["tldr"] and doc["tldr"].get("text"):
+      augmented_docs.append({"title": doc["title"], "content": doc["tldr"]["text"]})
+    else:
+      continue
+    scores = model.rescore(query, [doc["content"] for doc in augmented_docs])
+    assert len(scores) == len(augmented_docs), "The number of scores should be the same as the number of documents"
+    results = [x for _, x in sorted(zip(scores, results), key=lambda x: x[0], reverse=True)]
 
   debug_logger.debug(f"query: {query} returned {len(results)} results with filters {filters}")
 
   return results
 
-def query_to_documents(query, filters=None, augment_query=True, rerank=False, model=None, search_in_original_pdf=False):
+def query_to_documents(query, filters=None, augment_query=True, rerank=False, model=None):
 
   if augment_query:
     queries= query_augmentor.augment_queries(query)
@@ -88,10 +88,10 @@ def query_to_documents(query, filters=None, augment_query=True, rerank=False, mo
 
     results=[]
     for query in queries:
-      results.extend(search_one_query(query, filters=filters, rerank=rerank, model=model, search_in_original_pdf=search_in_original_pdf))
+      results.extend(search_one_query(query, filters=filters, rerank=rerank, model=model))
 
   else:
-    results=search_one_query(query, filters=filters, rerank=rerank, model=model, search_in_original_pdf=search_in_original_pdf)
+    results=search_one_query(query, filters=filters, rerank=rerank, model=model)
 
   return results
   
@@ -101,22 +101,12 @@ def documents_to_section(results, query):
   user_prompt=""
   current_paper_number=0
   for i,result in enumerate(results):
-
-    if result["abstract"]:
-      paper_summary=result["abstract"]
-
-    elif result["tldr"]:
-      paper_summary=result["tldr"]["text"]
-    else:
-      continue
-
     current_paper_number+=1
 
     if current_paper_number>=6:
       break
 
-    
-    paper_text=paper_template.format(I=i+1,SUMMARY=paper_summary, TITLE=result["title"])
+    paper_text=paper_template.format(I=i+1, CONTENT=result["content"], TITLE=result["title"])
     user_prompt+=paper_text + "\n"
 
   user_prompt+= "Paragraph Subject: " + query
@@ -142,7 +132,7 @@ if __name__ == "__main__":
   argparser.add_argument("--out_path", type=str, default="proc1.json", help="Path to save the evaluation results")
   argparser.add_argument("--reranker", action="store_true", help="Whether to use the reranker or not")
   argparser.add_argument("--reranker_model", type=str, default="castorini/monot5-large-msmarco", help="Path to save the evaluation results")
-  argparser.add_argument("--use_original_pdf", action="store_true", help="Whether to use the original pdf or not")
+
   args = argparser.parse_args()
 
   if not os.path.exists(args.out_path):
@@ -169,7 +159,7 @@ if __name__ == "__main__":
 
   for section in tqdm(sections):
     query=survey_title + " - "+ section
-    documents=query_to_documents(query, filters=None, rerank=args.reranker, model=model, search_in_original_pdf=args.use_original_pdf)
+    documents=query_to_documents(query, filters=None, rerank=args.reranker, model=model, search_in_original_pdf=args.reranker)
     if len(documents)==0:
       print("skipping section, no relevant documents found for query", query)
       continue
