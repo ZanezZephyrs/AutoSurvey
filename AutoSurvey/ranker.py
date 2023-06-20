@@ -1,8 +1,6 @@
 from typing import List
 from math import exp
 
-from tqdm.auto import tqdm
-
 from transformers import (
     AutoTokenizer,
     AutoModelForSeq2SeqLM
@@ -47,7 +45,7 @@ class MonoT5():
             batch: list of passages for ranking
         """
         scores = []
-        for batch in tqdm(chunks(docs, batch_size), total=len(docs)//batch_size, desc="Rescoring documents"):
+        for batch in chunks(docs, batch_size):
             # Creates the inputs to the model
             queries_documents = [f"Query: {query} Document: {text} Relevant:" for text in batch]
             tokenized = self.tokenizer(
