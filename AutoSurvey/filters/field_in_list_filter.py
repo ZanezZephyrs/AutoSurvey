@@ -12,7 +12,6 @@ class FieldInListFilter(Filter):
             return False
         
         if isinstance(doc[self.field], list):
-
             at_least_one_match=False
             all_match=True
             for option in doc[self.field]:
@@ -28,6 +27,11 @@ class FieldInListFilter(Filter):
                 return at_least_one_match
         
         else:
-            return doc[self.field] in self.allowed_options
-        
-        
+            # Check if one of the dict keys is in the allowed options
+            keys = list(doc[self.field].keys())
+            if self.strict:
+                # all items in allowed options are in keys
+                return all([key in keys for key in self.allowed_options])
+            else:
+                return any([key in keys for key in self.allowed_options])
+
