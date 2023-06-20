@@ -6,7 +6,7 @@ from AutoSurvey.pdf_generation.pdf_generator import PDFGenerator
 from AutoSurvey.llm_inference.query_augmentor import QueryAugmentor
 from AutoSurvey.ranker import MonoT5
 from AutoSurvey.pdf_extraction.pdf_extractor import get_pdf_windows
-from tqdm.auto import tqdm
+from tqdm.notebook import tqdm
 import argparse
 import json
 import logging
@@ -53,8 +53,11 @@ def search_one_query(query, filters=None, rerank=False, model=None):
     ]
 
   docs = searcher.search(params, filters=filters)
+  if len(docs) == 0:
+    debug_logger.debug(f"query: {query} returned 0 results with filters {filters}")
+    return []
   augmented_docs = []
-  for doc in tqdm(docs, desc="Downloading pdfs"):
+  for doc in docs:
     if rerank:
       pdf = searcher.download_pdf(doc["paperId"])
       if pdf:
@@ -64,6 +67,7 @@ def search_one_query(query, filters=None, rerank=False, model=None):
         windows = get_pdf_windows(temp_file_path)
         temp_file.close()
         augmented_docs.extend([{"title": doc["title"], "content": window} for window in windows])
+        debug_logger.debug(f"extracted {len(windows)} windows from pdf {doc['title']}\n")
         continue
     if doc["abstract"]:
       augmented_docs.append({"title": doc["title"], "content": doc["abstract"]})
@@ -73,11 +77,11 @@ def search_one_query(query, filters=None, rerank=False, model=None):
       continue
     scores = model.rescore(query, [doc["content"] for doc in augmented_docs])
     assert len(scores) == len(augmented_docs), "The number of scores should be the same as the number of documents"
-    results = [x for _, x in sorted(zip(scores, results), key=lambda x: x[0], reverse=True)]
+    augmented_docs = [x for _, x in sorted(zip(scores, augmented_docs), key=lambda x: x[0], reverse=True)]
 
-  debug_logger.debug(f"query: {query} returned {len(results)} results with filters {filters}")
+  debug_logger.debug(f"query: {query} returned {len(docs)} results with filters {filters}")
 
-  return results
+  return augmented_docs
 
 def query_to_documents(query, filters=None, augment_query=True, rerank=False, model=None):
 
@@ -103,7 +107,7 @@ def documents_to_section(results, query):
   for i,result in enumerate(results):
     current_paper_number+=1
 
-    if current_paper_number>=6:
+    if current_paper_number>=12:
       break
 
     paper_text=paper_template.format(I=i+1, CONTENT=result["content"], TITLE=result["title"])
@@ -157,9 +161,9 @@ if __name__ == "__main__":
   if args.reranker:
     model = MonoT5(args.reranker_model, fp16=True)
 
-  for section in tqdm(sections):
+  for section in tqdm(sections, desc="Processing sections"):
     query=survey_title + " - "+ section
-    documents=query_to_documents(query, filters=None, rerank=args.reranker, model=model, search_in_original_pdf=args.reranker)
+    documents=query_to_documents(query, filters=None, rerank=args.reranker, model=model)
     if len(documents)==0:
       print("skipping section, no relevant documents found for query", query)
       continue
@@ -178,5 +182,5 @@ if __name__ == "__main__":
   with open(args.out_path, "w") as f:
       json.dump(sections_data, f, indent=4)
 
-  pdf_path=args.out_path.replace(".json", ".pdf")
-  PDFGenerator.generate_pdf(survey_title, sections_data, output_file=pdf_path)
+  # pdf_path=args.out_path.replace(".json", ".pdf")
+  # PDFGenerator.generate_pdf(survey_title, sections_data, output_file=pdf_path)
