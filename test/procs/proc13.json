@@ -1,0 +1,7 @@
+{
+    "ChatGPT: A comprehensive review on background, applications, key challenges, bias, ethics, limitations and future scope": {
+        "Summary on evaluation of LLM": {
+            "content": "Large language models (LLMs) such as ChatGPT have been extensively evaluated in recent research, with a variety of results. ChatGPT has shown good results in fields such as medical education, generating scientific abstracts and simplifying radiology reports. Additionally, ChatGPT has shown promise as a tool to improve student learning outcomes, but there are also concerns regarding potential inaccuracies and ethical issues. Researchers have also conducted extensive evaluations to compare ChatGPT's responses to that of human experts, finding that ChatGPT was able to answer questions accurately, but with some limitations including reliability in reasoning and the potential for hallucinations. Nevertheless, ChatGPT has shown improvement on more complex reasoning tasks and is able to generate a more diverse range of multimodal content from textual prompts, making it a useful tool in some specific fields. Lastly, different studies showed the importance of developing policies and regulations to guarantee the accuracy and integrity of using these models in scientific writing along with implementing AI output detectors in the editorial process."
+        }
+    }
+}

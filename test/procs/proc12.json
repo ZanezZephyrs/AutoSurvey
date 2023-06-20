@@ -1,0 +1,7 @@
+{
+    "ChatGPT: A comprehensive review on background, applications, key challenges, bias, ethics, limitations and future scope": {
+        "Summary on evaluation of LLM": {
+            "content": "The recent advances in generative models such as ChatGPT have brought about high expectations for their potential applications in healthcare, education, and research as summarized in several reviews. A systematic review of its applications in healthcare, education, and research showed that ChatGPT could be beneficial in scientific writing, health care research, and practice, including personalized learning and improved critical thinking. Nevertheless, concerns were raised regarding its use, including ethical, copyright, transparency, and legal issues. As for its use in education, ChatGPT may serve as an assistant for instructors and a virtual tutor for students, and its performance varied across different subject domains. Furthermore, a taxonomy and systematic review of publications on ChatGPT in healthcare showed that specialized models trained on biomedical datasets are more reliable for clinical applications than a chatbot like ChatGPT. Consequently, the reviews emphasize the need for caution regarding the use of LLM, specifically ChatGPT in critical fields such as healthcare and highlight the importance of further research to address its limitations."
+        }
+    }
+}
