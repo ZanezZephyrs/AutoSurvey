@@ -1,0 +1,7 @@
+{
+    "ChatGPT: A comprehensive review on background, applications, key challenges, bias, ethics, limitations and future scope": {
+        "Summary on evaluation of LLM": {
+            "content": "Language models such as ChatGPT have shown promising applications in various fields, including healthcare and education [3,4]. These large generative AI models are capable of generating novel content and performing complex tasks, revolutionizing different sectors in the process [5,6]. In healthcare, ChatGPT has been found useful in scientific writing, research, clinical practice, and personalized learning, among other benefits [4]. However, concerns have been raised regarding the use of these models, such as ethical, copyright, transparency, legal issues, risk of bias, plagiarism, lack of originality, inaccurate content, limited knowledge, incorrect citations, cybersecurity, and risk of infodemics [4]. Despite these challenges, the adoption of ChatGPT and similar models holds potential to drive paradigm shifts in various industries, while caution is necessary to address the limitations associated with the use of such technology [7]."
+        }
+    }
+}

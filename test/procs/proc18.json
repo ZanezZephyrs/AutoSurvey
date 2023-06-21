@@ -1,0 +1,7 @@
+{
+    "ChatGPT: A comprehensive review on background, applications, key challenges, bias, ethics, limitations and future scope": {
+        "Summary on evaluation of LLM": {
+            "content": "Large language models (LLMs) like ChatGPT have shown tremendous potential in various sectors, including healthcare and education [1, 2, 3]. Their ability to generate novel content and assist in tasks ranging from scientific writing to personalized learning [1,2,3] may lead to significant advancements in many industries. However, evaluation studies have cited various concerns on their validity and constraints, such as ethical, copyright, transparency, legal issues, risk of bias, plagiarism, lack of originality, inaccuracies, incorrect citations, cybersecurity issues, and risk of infodemics [2]. While these generative AI models contribute to a variety of tasks, such as text-to-image conversion with the DALLE-2 model, text-to-3D image conversion with the Dreamfusion model, and text-to-code conversion with the Codex model [3, 5, 6], it is essential to approach their application in healthcare and education with caution [2]. In summary, LLMs have shown promising capabilities, but researchers, policymakers, and practitioners should address these concerns and limitations for the responsible and effective use of these transformative technologies."
+        }
+    }
+}
