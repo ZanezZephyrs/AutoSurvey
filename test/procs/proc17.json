@@ -1,0 +1,7 @@
+{
+    "ChatGPT: A comprehensive review on background, applications, key challenges, bias, ethics, limitations and future scope": {
+        "Summary on evaluation of LLM": {
+            "content": "Large Language Models (LLMs) like ChatGPT have demonstrated remarkable capabilities in various tasks, including text summarization [6,7]. There has been significant interest in evaluating LLMs' performance for practical applications, such as aspect-based or query-based summaries [7]. Studies have shown that LLM-generated summaries are on par with human-generated ones in certain cases, as demonstrated with news summaries [6]. However, the exploration of ChatGPT's performance on different types of summaries, benchmark datasets, and diverse domains remains an ongoing endeavor [7]. To address this, researchers have compared ChatGPT performance with traditional fine-tuning methods using metric scores such as Rouge [7]. Findings have highlighted unique differences between ChatGPT-generated summaries and human references [7], emphasizing the need for more investigations and human evaluation to uncover the full potential and limitations of LLMs in text summarization tasks."
+        }
+    }
+}
