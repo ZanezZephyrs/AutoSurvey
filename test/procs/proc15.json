@@ -1,0 +1,7 @@
+{
+    "ChatGPT: A comprehensive review on background, applications, key challenges, bias, ethics, limitations and future scope": {
+        "Summary on evaluation of LLM": {
+            "content": "Recent studies have focused on the evaluation of large language models (LLMs) like ChatGPT in various contexts. These evaluations often explore the potential of such models in providing effective solutions for diverse applications, such as literature review generation [1], taxonomy creation [2], decision-making in healthcare [3,4], and designing effective search algorithms for systematic reviews [5]. However, while these LLMs exhibit impressive capabilities, they also reveal limitations that warrant further examination. For instance, robustness remains a challenge, as evident from the adversity and out-of-distribution (OOD) perspectives [7]. Overall, the evaluations highlight the need for continuous research to improve the performance, reliability, and ethical implications of these LLMs for better adoption across various domains."
+        }
+    }
+}
