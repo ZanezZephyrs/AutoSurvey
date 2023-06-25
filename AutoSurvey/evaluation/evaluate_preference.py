@@ -15,11 +15,11 @@ def evaluate(dataset: str, gold_path, log_file: str):
         log_file: Path to save the evaluation results
     Returns:
         Average score for the dataset 
-    """
+    """    
     with open(dataset, "r") as f:
         data = json.load(f)
 
-    with open(gold_path, "r") as f:
+    with open(gold_path, "r", encoding="utf8") as f:
         gold_data = json.load(f)
     
     with open(log_file, "w") as f:
@@ -27,16 +27,27 @@ def evaluate(dataset: str, gold_path, log_file: str):
         all_ground_truth_scores = []
         for survey_name in data:
             for survey_section, content in data[survey_name].items():
-                generated_content = content["content"]
-                ground_truth = gold_data[survey_name][survey_section]["content"]
-
-                if ground_truth == "":
-                    raise ValueError("Ground truth is empty")
-
-                score, exps = get_llm_score(survey_name, survey_section, generated_content, ground_truth)
+                exps = None
+                if content.get("subsections"):
+                    sub_scores = []
+                    for sub_name, sub_content in content.get("subsections").items():
+                        generated_content = sub_content["content"]
+                        ground_truth = gold_data[survey_name][survey_section]["subsections"][sub_name]["content"]
+                        if ground_truth == "":
+                            raise ValueError("Ground truth is empty")
+                        sub_score, _ = get_llm_score(survey_name, survey_section, generated_content, ground_truth)
+                        sub_scores.append((sub_score[0], sub_score[1]))
+                    score = [sum([s[0] for s in sub_scores])/len(sub_scores), sum([s[1] for s in sub_scores])/len(sub_scores)]
+                else:
+                    generated_content = content["content"]
+                    ground_truth = gold_data[survey_name][survey_section]["content"]
+                    if ground_truth == "":
+                        raise ValueError("Ground truth is empty")
+                    score, exps = get_llm_score(survey_name, survey_section, generated_content, ground_truth)
                 all_candidate_scores.append(score[0])
                 all_ground_truth_scores.append(score[1])
                 json.dump({"survey_name": survey_name, "survey_section": survey_section, "content": generated_content, "candidate_score": score[0], "ground_truth_score": score[1], "explanations": exps}, f)
+                f.write("\n")
     
     return [sum(all_candidate_scores)/len(all_candidate_scores), sum(all_ground_truth_scores)/len(all_ground_truth_scores)]
 
@@ -65,11 +76,8 @@ def get_llm_score(paper_title, section_title, candidate, ground_truth):
             temperature=settings.temperature,
             top_p=settings.top_p,
         )
-
-        # print(prompt)
         
         response = response.choices[0]["message"]["content"]
-        # print(response)
         score=response.split("\n")[0].strip()# "number number"
         score=score.split(" ") # ["number","number"]
         score=[float(s) for s in score] # [number,number]
